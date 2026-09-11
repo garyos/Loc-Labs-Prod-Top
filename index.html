@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LocurioLabs</title>
+<meta name="description" content="LocurioLabs — a professional services studio for the AI-driven economy. AI development, technology consulting, productivity multipliers, creative solutions, enhanced environments.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #05050a;
+    --ink-raised: rgba(15,16,28,0.55);
+    --ink-solid: #0c0d18;
+    --line: rgba(255,255,255,0.10);
+    --text: #eef0fb;
+    --text-dim: #9aa0c0;
+    --cyan: #4bf5e0;
+    --magenta: #ff4fd8;
+    --violet: #9b6bff;
+    --amber: #ffc857;
+    --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+  body {
+    margin: 0; background: var(--ink); color: var(--text); font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+
+  /* ---------- fractal background ---------- */
+  #fractal-canvas {
+    position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; display: block;
+    background: radial-gradient(ellipse 120% 80% at 50% 0%, #1a0f2e 0%, #05050a 65%);
+  }
+  .grain {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .vignette {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    box-shadow: inset 0 0 22vw rgba(0,0,0,0.75);
+  }
+  /* The hero's copy sits directly on the raw canvas (no glass panel behind
+     it, unlike every other section's cards) — the fractal's brightest
+     cluster drifts around over time, so a static right-side UV bias alone
+     can't guarantee contrast indefinitely. This scrim is the actual
+     legibility guarantee: strong immediately behind the text column,
+     fading to nothing by ~65% across so the fractal still reads at full
+     intensity on the right and lower thirds of the screen. */
+  .text-scrim {
+    position: fixed; inset: 0; z-index: 3; pointer-events: none;
+    background: linear-gradient(100deg, rgba(4,4,10,0.82) 0%, rgba(4,4,10,0.55) 38%, rgba(4,4,10,0.12) 62%, transparent 72%);
+  }
+
+  /* ---------- layout shell ---------- */
+  .content { position: relative; z-index: 5; }
+  section { position: relative; padding: 120px 7vw; max-width: 1180px; margin: 0 auto; }
+  section:first-of-type { padding-top: 0; }
+  .section-kicker {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 18px; opacity: 0.9;
+  }
+  .section-kicker::before { content: "◆ "; }
+  h2.section-title {
+    font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 4.2vw, 54px);
+    line-height: 1.05; margin: 0 0 20px; letter-spacing: -0.01em;
+  }
+  .section-lede {
+    font-size: clamp(15px, 1.6vw, 18px); line-height: 1.7; color: var(--text-dim); max-width: 62ch; margin: 0 0 56px;
+  }
+
+  /* Reveal-on-scroll — a small, honest amount of motion, not a gimmick;
+     skipped entirely under prefers-reduced-motion via the global rule above. */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* ---------- wordmark / logo ---------- */
+  .brandmark {
+    position: fixed; top: max(22px, env(safe-area-inset-top)); left: 7vw; z-index: 20;
+    font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 0.02em;
+    color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 9px;
+  }
+  .brandmark .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--cyan), var(--magenta), var(--violet), var(--cyan));
+    animation: spin 6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- rail nav: 4 dots, not a navbar ---------- */
+  .rail {
+    position: fixed; right: max(22px, env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); z-index: 20;
+    display: flex; flex-direction: column; gap: 22px; align-items: flex-end;
+  }
+  .rail-item { display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 0; cursor: pointer; }
+  .rail-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-dim); opacity: 0; transform: translateX(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease; white-space: nowrap;
+  }
+  .rail-item:hover .rail-label, .rail-item.active .rail-label { opacity: 1; transform: translateX(0); }
+  .rail-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); border: 1px solid rgba(255,255,255,0.25); transition: all 0.25s ease; flex: 0 0 auto; }
+  .rail-item.active .rail-dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan); transform: scale(1.3); }
+  @media (max-width: 720px) { .rail { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding-top: 100px;
+  }
+  .hero-kicker {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--text-dim); margin-bottom: 26px;
+  }
+  .hero h1 {
+    font-family: var(--font-display); font-weight: 700; font-size: clamp(52px, 10vw, 128px);
+    line-height: 0.94; margin: 0 0 28px; letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #ffffff 0%, var(--cyan) 45%, var(--violet) 75%, var(--magenta) 100%);
+    background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    animation: sheen 9s ease-in-out infinite;
+  }
+  @keyframes sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 21px); line-height: 1.6; color: var(--text-dim); max-width: 46ch; margin: 0 0 48px;
+  }
+  .hero-thesis {
+    border-left: 2px solid var(--cyan); padding: 4px 0 4px 26px; max-width: 62ch;
+    font-family: var(--font-display); font-size: clamp(18px, 2.3vw, 25px); line-height: 1.45; font-weight: 500;
+    color: var(--text);
+  }
+  .hero-thesis b { color: var(--cyan); font-weight: 700; }
+  .scroll-cue {
+    margin-top: 64px; display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .scroll-cue .chevrons { display: flex; flex-direction: column; gap: 1px; }
+  .scroll-cue .chevrons span { animation: chevbounce 1.8s ease-in-out infinite; opacity: 0.5; }
+  .scroll-cue .chevrons span:nth-child(2) { animation-delay: 0.15s; }
+  @keyframes chevbounce { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
+
+  /* ---------- glass panels shared by products / ideas / thought cards ---------- */
+  .glass {
+    background: var(--ink-raised); border: 1px solid var(--line); border-radius: 18px;
+    backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+  }
+
+  /* ---------- products ---------- */
+  .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  @media (max-width: 880px) { .product-grid { grid-template-columns: 1fr; } }
+  .product-card {
+    padding: 34px 28px; display: flex; flex-direction: column; gap: 16px; text-decoration: none; color: inherit;
+    position: relative; overflow: hidden; transition: transform 0.35s ease, border-color 0.35s ease;
+  }
+  .product-card::before {
+    content: ""; position: absolute; inset: -40%; opacity: 0; transition: opacity 0.4s ease;
+    background: radial-gradient(circle at 30% 20%, var(--glow, var(--cyan)) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .product-card:hover { transform: translateY(-6px); border-color: var(--glow, var(--cyan)); }
+  .product-card:hover::before { opacity: 0.16; }
+  .product-card.wip { cursor: default; }
+  .product-card.wip:hover { transform: none; }
+  .product-eyebrow {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--glow, var(--cyan)); display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  }
+  .wip-badge {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; color: var(--amber);
+    border: 1px solid var(--amber); border-radius: 20px; padding: 2px 8px;
+  }
+  .product-card h3 { font-family: var(--font-display); font-size: 25px; font-weight: 700; margin: 0; }
+  .product-card p { font-size: 14px; line-height: 1.6; color: var(--text-dim); margin: 0; flex: 1 1 auto; }
+  .product-card .go {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em; color: var(--text);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .product-card:not(.wip):hover .go { color: var(--glow, var(--cyan)); }
+  .product-domain { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-dim); opacity: 0.75; }
+
+  /* ---------- ideas ---------- */
+  .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; }
+  .idea-card { padding: 26px 22px; }
+  .idea-glyph { font-family: var(--font-display); font-size: 26px; margin-bottom: 14px; color: var(--violet); }
+  .idea-card h3 { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+  .idea-card p { font-size: 13.5px; line-height: 1.6; color: var(--text-dim); margin: 0; }
+
+  /* ---------- thought leadership ---------- */
+  .thought-list { display: flex; flex-direction: column; gap: 16px; }
+  .thought-row {
+    padding: 26px 28px; display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: start;
+  }
+  @media (max-width: 640px) { .thought-row { grid-template-columns: 1fr; gap: 10px; } }
+  .thought-num { font-family: var(--font-mono); font-size: 12px; color: var(--magenta); letter-spacing: 0.06em; padding-top: 3px; }
+  .thought-row h3 { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin: 0 0 8px; }
+  .thought-row p { font-size: 14px; line-height: 1.65; color: var(--text-dim); margin: 0 0 10px; max-width: 68ch; }
+  .thought-status {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); opacity: 0.7;
+  }
+
+  /* ---------- footer ---------- */
+  footer { padding: 70px 7vw 60px; text-align: center; }
+  footer .fbrand { font-family: var(--font-display); font-weight: 700; font-size: 16px; margin-bottom: 10px; }
+  footer .fline { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.04em; }
+  footer .flinks { margin-top: 18px; display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; }
+  footer .flinks a { color: var(--text-dim); font-family: var(--font-mono); font-size: 11px; text-decoration: none; letter-spacing: 0.04em; }
+  footer .flinks a:hover { color: var(--cyan); }
+</style>
+</head>
+<body>
+  <canvas id="fractal-canvas"></canvas>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+  <div class="text-scrim"></div>
+
+  <a class="brandmark" href="#intro"><span class="dot"></span>LOCURIOLABS</a>
+
+  <nav class="rail" id="rail" aria-label="Section navigation">
+    <button class="rail-item active" data-target="intro"><span class="rail-label">Intro</span><span class="rail-dot"></span></button>
+    <button class="rail-item" data-target="products"><span class="rail-label">Products</span><span class="rail-dot"></span></button>
+    <button class="rail-item" data-target="ideas"><span class="rail-label">Ideas</span><span class="rail-dot"></span></button>
+    <button class="rail-item" data-target="thinking"><span class="rail-label">Thought Leadership</span><span class="rail-dot"></span></button>
+  </nav>
+
+  <div class="content">
+    <section class="hero" id="intro">
+      <div class="hero-kicker">// A studio for the ai-driven economy</div>
+      <h1>LocurioLabs</h1>
+      <p class="hero-sub">A professional services portfolio built around experimentation — unconventional, creative solutions and fresh approaches for organisations navigating what comes after "we should probably use AI for something."</p>
+      <div class="hero-thesis reveal">
+        The industry keeps asking <b>how we can use</b> new technology. We think that's the smaller question. The one worth asking is <b>how we integrate with it</b> — to maximise output, and build engineering practice that's measured by value delivered, not features shipped.
+      </div>
+      <div class="scroll-cue"><span class="chevrons"><span>⌄</span><span>⌄</span></span> scroll</div>
+    </section>
+
+    <section id="products">
+      <div class="section-kicker reveal">What we're building</div>
+      <h2 class="section-title reveal">Live products, built in the open.</h2>
+      <p class="section-lede reveal">Every idea we take seriously ships as something real. These are the current products running out of LocurioLabs.</p>
+      <div class="product-grid">
+        <a class="product-card glass reveal" style="--glow: var(--cyan)" href="https://signal.locurio.co.uk" target="_blank" rel="noopener noreferrer">
+          <div class="product-eyebrow">The Signal</div>
+          <h3>Global threat intelligence</h3>
+          <p>A live cyber threat feed, CVE explorer, ransomware tracker, and weekly intelligence reports — cut from the noise.</p>
+          <div class="go">signal.locurio.co.uk ↗</div>
+        </a>
+        <a class="product-card glass reveal" style="--glow: var(--violet)" href="https://intel.locurio.co.uk" target="_blank" rel="noopener noreferrer">
+          <div class="product-eyebrow">Pulse Feed</div>
+          <h3>Daily cyber digest</h3>
+          <p>A fast-moving visual briefing — threat intel, CVEs, and weekly analytics distilled into a single looping feed.</p>
+          <div class="go">intel.locurio.co.uk ↗</div>
+        </a>
+        <a class="product-card wip glass reveal" style="--glow: var(--amber)" href="https://game.locurio.co.uk" target="_blank" rel="noopener noreferrer">
+          <div class="product-eyebrow">DroneHorde <span class="wip-badge">Work in progress</span></div>
+          <h3>Substance of style</h3>
+          <p>A vibe-coded side project — the big, satisfying features from decades of games we've loved, rebuilt around a hilariously basic look. All feel, none of the budget.</p>
+          <div class="go">game.locurio.co.uk ↗</div>
+        </a>
+      </div>
+    </section>
+
+    <section id="ideas">
+      <div class="section-kicker reveal">How we think about the work</div>
+      <h2 class="section-title reveal">Five questions we keep coming back to.</h2>
+      <p class="section-lede reveal">Not a service menu — the lenses we actually use when we sit down with a problem.</p>
+      <div class="idea-grid">
+        <div class="idea-card glass reveal"><div class="idea-glyph">◆</div><h3>AI Development</h3><p>Building AI-native products and systems — not bolting a chatbot onto something that was never designed for one.</p></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">◇</div><h3>Technology Consulting</h3><p>Pragmatic guidance on where automation and AI genuinely move the needle for a business — and where they quietly don't.</p></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">△</div><h3>Productivity Multipliers</h3><p>Tooling and workflow design aimed at compounding output over time, not just producing more activity this quarter.</p></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">▽</div><h3>Creative Solutions</h3><p>Unconventional approaches for the problems that don't fit the standard playbook — because most interesting problems don't.</p></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">◈</div><h3>Enhanced Environments</h3><p>Engineering the conditions — tools, environments, feedback loops — that make consistently good work the easy default.</p></div>
+      </div>
+    </section>
+
+    <section id="thinking">
+      <div class="section-kicker reveal">Perspectives, in progress</div>
+      <h2 class="section-title reveal">Thought leadership.</h2>
+      <p class="section-lede reveal">Long-form pieces we're actively writing — the questions behind them are already shaping how we work.</p>
+      <div class="thought-list">
+        <div class="thought-row glass reveal">
+          <div class="thought-num">01</div>
+          <div>
+            <h3>Integration over adoption</h3>
+            <p>Most "AI strategy" is procurement wearing a strategy's clothes. Buying access to a model isn't the same as redesigning a workflow around what it's actually good at. What would real integration look like, function by function?</p>
+            <div class="thought-status">Essay in progress</div>
+          </div>
+        </div>
+        <div class="thought-row glass reveal">
+          <div class="thought-num">02</div>
+          <div>
+            <h3>Value-driven engineering</h3>
+            <p>Shipping fast isn't the same as shipping value, and most throughput metrics can't tell the two apart. We're rethinking what engineering velocity should actually measure when the cost of writing code keeps falling.</p>
+            <div class="thought-status">Essay in progress</div>
+          </div>
+        </div>
+        <div class="thought-row glass reveal">
+          <div class="thought-num">03</div>
+          <div>
+            <h3>The productivity-multiplier trap</h3>
+            <p>Not every tool that saves an individual time actually compounds for the team. Some just relocate the bottleneck one stage downstream. A field guide to telling the difference before you roll something out.</p>
+            <div class="thought-status">Essay in progress</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="fbrand">LocurioLabs</div>
+      <div class="fline">Experimentation and innovation for the AI-driven economy.</div>
+      <div class="flinks">
+        <a href="https://signal.locurio.co.uk" target="_blank" rel="noopener noreferrer">The Signal</a>
+        <a href="https://intel.locurio.co.uk" target="_blank" rel="noopener noreferrer">Pulse Feed</a>
+        <a href="https://game.locurio.co.uk" target="_blank" rel="noopener noreferrer">DroneHorde</a>
+      </div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- rail nav + smooth scroll ----------
+  const railItems = [...document.querySelectorAll(".rail-item")];
+  railItems.forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.getElementById(btn.dataset.target)?.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth" });
+    });
+  });
+  const sections = ["intro", "products", "ideas", "thinking"].map(id => document.getElementById(id)).filter(Boolean);
+  if ("IntersectionObserver" in window) {
+    const spy = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        railItems.forEach(b => b.classList.toggle("active", b.dataset.target === entry.target.id));
+      });
+    }, { rootMargin: "-40% 0px -55% 0px", threshold: 0 });
+    sections.forEach(s => spy.observe(s));
+  }
+
+  // ---------- reveal-on-scroll ----------
+  const revealEls = [...document.querySelectorAll(".reveal")];
+  if (REDUCED_MOTION) {
+    revealEls.forEach(el => el.classList.add("in"));
+  } else if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add("in"); io.unobserve(entry.target); } });
+    }, { threshold: 0.15 });
+    revealEls.forEach(el => io.observe(el));
+  } else {
+    revealEls.forEach(el => el.classList.add("in"));
+  }
+
+  // ---------- fractal background (WebGL Julia set, continuously drifting) ----------
+  // A single fragment shader, no library — same "hand-rolled, no dependency"
+  // approach as every chart elsewhere in this codebase. Falls back to the
+  // plain CSS radial-gradient already set on #fractal-canvas (nothing extra
+  // to do — the canvas just never gets a WebGL context drawn into it) if
+  // WebGL isn't available, or freezes on a single static frame under
+  // prefers-reduced-motion rather than animating indefinitely.
+  const canvas = document.getElementById("fractal-canvas");
+  const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+
+  if (gl) {
+    const VERT_SRC = `
+      attribute vec2 a_pos;
+      void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+    `;
+    const FRAG_SRC = `
+      precision highp float;
+      uniform vec2 u_resolution;
+      uniform float u_time;
+      uniform vec2 u_mouse;
+
+      // Standard compact HSL->RGB (h/s/l in 0..1) — used instead of a
+      // hand-tuned cosine palette specifically so the hue range can be
+      // PRECISELY constrained to the brand's cyan/violet/magenta family.
+      // The first version used a cosine palette and swept the full rainbow
+      // (yellow/green/orange included), which read as a loud, generic
+      // "trippy demo" rather than a deliberate brand backdrop, and the
+      // bright bands landed directly behind the hero text and hurt
+      // legibility. Confining hue to one deliberate arc fixes both.
+      vec3 hsl2rgb(float h, float s, float l) {
+        vec3 rgb = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+        return l + s * (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
+      }
+      vec3 palette(float t) {
+        // 188deg (cyan) through 245deg (blue/violet) to 305deg (magenta)
+        // and back — never leaves that arc, so it always reads as "brand",
+        // never as a rainbow. Lightness/saturation kept moderate (not
+        // maxed) so it sits behind white text as a mood, not a spotlight.
+        float hueDeg = 188.0 + 117.0 * (0.5 + 0.5 * sin(t));
+        float l = 0.30 + 0.10 * sin(t * 1.7 + 1.0);
+        return hsl2rgb(hueDeg / 360.0, 0.7, l);
+      }
+
+      void main() {
+        // Biased right-of-center on purpose: page content (hero copy, card
+        // text) sits in the left ~60% of the viewport, so keeping the
+        // fractal's densest, brightest detail weighted toward the right
+        // side leaves the text column calmer. A text scrim (see .text-scrim
+        // in the CSS) is the real legibility guarantee though, since the
+        // animation still drifts the bright cluster around over time.
+        vec2 uv = (gl_FragCoord.xy - vec2(0.6, 0.48) * u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+        float zoom = 2.2;
+        uv *= zoom;
+        uv += u_mouse * 0.06;
+
+        float t = 0.35 + 0.22 * sin(u_time * 0.08);
+        vec2 c = vec2(0.45 * cos(t), 0.45 * sin(t * 0.87));
+
+        vec2 z = uv;
+        float iter = 0.0;
+        const float MAX_ITER = 140.0;
+        for (float i = 0.0; i < MAX_ITER; i += 1.0) {
+          z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+          if (dot(z, z) > 4.0) break;
+          iter += 1.0;
+        }
+
+        vec3 col;
+        if (iter >= MAX_ITER - 1.0) {
+          col = vec3(0.02, 0.018, 0.035);
+        } else {
+          float logZn = log(dot(z, z) + 1e-6) * 0.5;
+          float nu = log(logZn / log(2.0)) / log(2.0);
+          float smoothIter = iter + 1.0 - nu;
+          // Deliberately NOT normalized by MAX_ITER: escape time is heavily
+          // skewed toward low values (most pixels bail within ~20 of the
+          // 140 iteration budget, only points near the fractal boundary run
+          // long), so dividing by 140 crushed nearly the whole image into a
+          // sliver of the palette — a flat, washed-out plane instead of a
+          // fractal. Cycling the palette every ~22 iterations instead gives
+          // several full rainbow bands across the typical escape range,
+          // with the band frequency naturally increasing right at the
+          // boundary itself (the fine filigree detail an escape-time
+          // fractal is actually for).
+          col = palette(smoothIter * 0.045 + u_time * 0.025);
+        }
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    function compile(type, src) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.error("shader compile error", gl.getShaderInfoLog(sh));
+        gl.deleteShader(sh);
+        return null;
+      }
+      return sh;
+    }
+
+    const vs = compile(gl.VERTEX_SHADER, VERT_SRC);
+    const fs = compile(gl.FRAGMENT_SHADER, FRAG_SRC);
+    const program = (vs && fs) ? gl.createProgram() : null;
+
+    if (program) {
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+
+      if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        gl.useProgram(program);
+
+        const quad = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+        const buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+        const posLoc = gl.getAttribLocation(program, "a_pos");
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+        const uRes = gl.getUniformLocation(program, "u_resolution");
+        const uTime = gl.getUniformLocation(program, "u_time");
+        const uMouse = gl.getUniformLocation(program, "u_mouse");
+
+        let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+        window.addEventListener("pointermove", (e) => {
+          targetX = (e.clientX / window.innerWidth) * 2 - 1;
+          targetY = -((e.clientY / window.innerHeight) * 2 - 1);
+        }, { passive: true });
+
+        // Internal render resolution capped well below the display size —
+        // this is a full-screen per-pixel fractal iterated up to 140 times,
+        // so rendering at device pixel ratio on a large 4K/5K panel would be
+        // needlessly heavy for what's purely a background decoration. CSS
+        // stretches the low-res canvas back up to fill the viewport.
+        const MAX_RENDER_DIM = 900;
+        function resize() {
+          const w = window.innerWidth, h = window.innerHeight;
+          canvas.style.width = w + "px";
+          canvas.style.height = h + "px";
+          const scale = Math.min(1, MAX_RENDER_DIM / Math.max(w, h));
+          canvas.width = Math.max(1, Math.round(w * scale));
+          canvas.height = Math.max(1, Math.round(h * scale));
+          gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener("resize", resize);
+        resize();
+
+        let start = performance.now();
+        let rafId = null;
+        function frame(now) {
+          const t = (now - start) / 1000;
+          mouseX += (targetX - mouseX) * 0.03;
+          mouseY += (targetY - mouseY) * 0.03;
+          gl.uniform2f(uRes, canvas.width, canvas.height);
+          gl.uniform1f(uTime, t);
+          gl.uniform2f(uMouse, mouseX, mouseY);
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+          if (!REDUCED_MOTION) rafId = requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+
+        // A lost WebGL context (GPU driver reset, tab backgrounding on some
+        // mobile browsers, etc.) would otherwise leave the last rendered
+        // frame frozen with no way to recover — fall back to the plain CSS
+        // gradient already on the canvas element instead of a stuck image.
+        canvas.addEventListener("webglcontextlost", (e) => {
+          e.preventDefault();
+          if (rafId) cancelAnimationFrame(rafId);
+          canvas.style.background = "";
+        });
+      }
+    }
+  }
+})();
+</script>
+</body>
+</html>
