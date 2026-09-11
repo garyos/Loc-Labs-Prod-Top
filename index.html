@@ -63,7 +63,14 @@
   /* ---------- layout shell ---------- */
   .content { position: relative; z-index: 5; }
   section { position: relative; padding: 120px 7vw; max-width: 1180px; margin: 0 auto; }
-  section:first-of-type { padding-top: 0; }
+  /* :not(.hero) -- .hero carries its own explicit padding-top (100px, to
+     clear the fixed brandmark) which this rule was otherwise overriding to
+     0: section:first-of-type's specificity (0,1,1) beats .hero's (0,1,0)
+     for the same property, so the hero's intended top clearance was being
+     silently zeroed, letting its content overlap the fixed brandmark on
+     any viewport short enough for the hero's centered content to reach the
+     very top. Confirmed via actual computed styles, not assumed. */
+  section:first-of-type:not(.hero) { padding-top: 0; }
   .section-kicker {
     font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.34em; text-transform: uppercase;
     color: var(--cyan); margin-bottom: 18px; opacity: 0.9;
@@ -113,7 +120,7 @@
 
   /* ---------- hero ---------- */
   .hero {
-    min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding-top: 100px;
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: safe center; padding-top: 100px;
   }
   .hero-kicker {
     font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.34em; text-transform: uppercase;
@@ -182,14 +189,28 @@
     display: flex; align-items: center; gap: 6px;
   }
   .product-card:not(.wip):hover .go { color: var(--glow, var(--cyan)); }
-  .product-domain { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-dim); opacity: 0.75; }
+  /* Pulled up against .go's 16px flex gap so label + domain read as one
+     grouped unit (friendly action label, technical domain underneath)
+     rather than two evenly-spaced rows. */
+  .product-domain { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-dim); opacity: 0.75; margin-top: -10px; }
 
   /* ---------- ideas ---------- */
   .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; }
-  .idea-card { padding: 26px 22px; }
+  /* flex column so .idea-more can pin to the bottom via margin-top:auto --
+     gives every card in a row the same closing-line rhythm as .product-card's
+     .go, regardless of how long each card's own paragraph runs. */
+  .idea-card { padding: 26px 22px; display: flex; flex-direction: column; }
   .idea-glyph { font-family: var(--font-display); font-size: 26px; margin-bottom: 14px; color: var(--violet); }
   .idea-card h3 { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 8px; }
   .idea-card p { font-size: 13.5px; line-height: 1.6; color: var(--text-dim); margin: 0; }
+  /* Not a real link -- there's no dedicated page behind any of these five
+     topics yet, so this stays a static label (same honesty call as the
+     Thought Leadership section's "Essay in progress" tags) rather than a
+     dead or fake href. */
+  .idea-more {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-dim); margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line);
+  }
 
   /* ---------- thought leadership ---------- */
   .thought-list { display: flex; flex-direction: column; gap: 16px; }
@@ -248,19 +269,22 @@
           <div class="product-eyebrow">The Signal</div>
           <h3>Global threat intelligence</h3>
           <p>A live cyber threat feed, CVE explorer, ransomware tracker, and weekly intelligence reports, cut from the noise.</p>
-          <div class="go">signal.locurio.co.uk ↗</div>
+          <div class="go">Visit The Signal ↗</div>
+          <div class="product-domain">signal.locurio.co.uk</div>
         </a>
         <a class="product-card glass reveal" style="--glow: var(--violet)" href="https://intel.locurio.co.uk" target="_blank" rel="noopener noreferrer">
           <div class="product-eyebrow">Pulse Feed</div>
           <h3>Daily cyber digest</h3>
           <p>A fast-moving visual briefing: threat intel, CVEs, and weekly analytics distilled into a single looping feed.</p>
-          <div class="go">intel.locurio.co.uk ↗</div>
+          <div class="go">Open Pulse Feed ↗</div>
+          <div class="product-domain">intel.locurio.co.uk</div>
         </a>
         <a class="product-card wip glass reveal" style="--glow: var(--amber)" href="https://game.locurio.co.uk" target="_blank" rel="noopener noreferrer">
           <div class="product-eyebrow">DroneHorde <span class="wip-badge">Work in progress</span></div>
           <h3>Fun in Every Action</h3>
           <p>A vibe-coded side project: the big, satisfying features from decades of games we've loved, rebuilt around a hilariously basic look. All feel, none of the budget.</p>
-          <div class="go">game.locurio.co.uk ↗</div>
+          <div class="go">Preview DroneHorde ↗</div>
+          <div class="product-domain">game.locurio.co.uk</div>
         </a>
       </div>
     </section>
@@ -270,11 +294,11 @@
       <h2 class="section-title reveal">Five questions we keep coming back to.</h2>
       <p class="section-lede reveal">Not a service menu: the lenses we actually use when we sit down with a problem.</p>
       <div class="idea-grid">
-        <div class="idea-card glass reveal"><div class="idea-glyph">◆</div><h3>AI Development</h3><p>Building AI-native products and systems, not bolting a chatbot onto something that was never designed for one.</p></div>
-        <div class="idea-card glass reveal"><div class="idea-glyph">◇</div><h3>Technology Consulting</h3><p>Pragmatic guidance on where automation and AI genuinely move the needle for a business, and where they quietly don't.</p></div>
-        <div class="idea-card glass reveal"><div class="idea-glyph">△</div><h3>Productivity Multipliers</h3><p>Tooling and workflow design aimed at compounding output over time, not just producing more activity this quarter.</p></div>
-        <div class="idea-card glass reveal"><div class="idea-glyph">▽</div><h3>Creative Solutions</h3><p>Unconventional approaches for the problems that don't fit the standard playbook, because most interesting problems don't.</p></div>
-        <div class="idea-card glass reveal"><div class="idea-glyph">◈</div><h3>Enhanced Environments</h3><p>Engineering the conditions (tools, environments, feedback loops) that make consistently good work the easy default.</p></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">◆</div><h3>AI Development</h3><p>Building AI-native products and systems, not bolting a chatbot onto something that was never designed for one.</p><div class="idea-more">Find out more</div></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">◇</div><h3>Technology Consulting</h3><p>Pragmatic guidance on where automation and AI genuinely move the needle for a business, and where they quietly don't.</p><div class="idea-more">Find out more</div></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">△</div><h3>Productivity Multipliers</h3><p>Tooling and workflow design aimed at compounding output over time, not just producing more activity this quarter.</p><div class="idea-more">Find out more</div></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">▽</div><h3>Creative Solutions</h3><p>Unconventional approaches for the problems that don't fit the standard playbook, because most interesting problems don't.</p><div class="idea-more">Find out more</div></div>
+        <div class="idea-card glass reveal"><div class="idea-glyph">◈</div><h3>Enhanced Environments</h3><p>Engineering the conditions (tools, environments, feedback loops) that make consistently good work the easy default.</p><div class="idea-more">Find out more</div></div>
       </div>
     </section>
 
